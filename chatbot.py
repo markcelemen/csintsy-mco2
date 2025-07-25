@@ -289,7 +289,7 @@ def check_statement(prolog, statement):
 
         # Add the facts
         add_aunt = add_fact(prolog, f"aunt('{aunt}', '{nibling}')")
-        add_sex = add_fact(prolog, f"male('{aunt}')")
+        add_sex = add_fact(prolog, f"female('{aunt}')")
 
         # Return the correct output
         if add_aunt and add_sex:

@@ -1,6 +1,14 @@
 from pyswip import Prolog
 import re
 
+def initialize_prolog():
+    prolog = Prolog()
+    try:
+        prolog.consult("relationships.pl")
+    except Exception as e:
+        return None, f"Error loading Prolog file: {str(e)}"
+    return prolog, "Prolog initialized successfully."
+
 def check_statement(prolog, statement):
     statement = statement.strip()
     statement = statement.lower()

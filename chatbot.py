@@ -9,6 +9,21 @@ def initialize_prolog():
         return None, f"Error loading Prolog file: {str(e)}"
     return prolog, "Prolog initialized successfully."
 
+def add_fact(prolog, fact):
+    try:
+        prolog.assertz(fact)
+
+        # Check for contradictions
+        contradictions = list(prolog.query("contradiction(Reason)"))
+        # TODO: add print statement for contradictions found here
+        if contradictions:
+            # If a contradiction is found, then remove the fact
+            prolog.retract(fact)
+            return False
+        return True,
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 def check_statement(prolog, statement):
     statement = statement.strip()
     statement = statement.lower()

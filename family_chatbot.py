@@ -299,7 +299,8 @@ class FamilyRelationshipBot:
                 "person_their_own_ancestor", "person_their_own_descendant",
                 "cousin_grandparent_impossible", "relatives_having_child",
                 "siblings_having_child", "parent_child_having_child",
-                "siblings_without_shared_parent"
+                "siblings_without_shared_parent", "sibling_ancestor_impossible",  # Added new error type
+                "self_cousin", "parent_child_as_cousins", "generation_gap_too_large"  # Added new error types
             ]
             
             for error_type in error_types:
@@ -433,24 +434,7 @@ class FamilyRelationshipBot:
         if self.safely_add_facts(facts_to_add):
             return "OK! I learned something."
         else:
-            # Check for specific sibling constraint violation
-            sibling_violation = False
-            try:
-                # Check if the child has any siblings with whom they don't share parents
-                query = f"explicit_sibling('{child_name}', Sibling), " \
-                        f"Sibling \\= '{child_name}', " \
-                        f"has_parent('{child_name}', _), " \
-                        f"has_parent(Sibling, _), " \
-                        f"\\+ (has_parent('{child_name}', P), has_parent(Sibling, P))"
-                if list(self.prolog_engine.query(query)):
-                    sibling_violation = True
-            except:
-                pass
-            
-            if sibling_violation:
-                return "That's impossible!"
-            else:
-                return "That's impossible!"
+            return "That's impossible!"
         
     def handle_mother_statement(self, mother_name: str, child_name: str) -> str:
         """Handle mother-child relationship statement"""
@@ -465,24 +449,7 @@ class FamilyRelationshipBot:
         if self.safely_add_facts(facts_to_add):
             return "OK! I learned something."
         else:
-            # Check for specific sibling constraint violation
-            sibling_violation = False
-            try:
-                # Check if the child has any siblings with whom they don't share parents
-                query = f"explicit_sibling('{child_name}', Sibling), " \
-                        f"Sibling \\= '{child_name}', " \
-                        f"has_parent('{child_name}', _), " \
-                        f"has_parent(Sibling, _), " \
-                        f"\\+ (has_parent('{child_name}', P), has_parent(Sibling, P))"
-                if list(self.prolog_engine.query(query)):
-                    sibling_violation = True
-            except:
-                pass
-            
-            if sibling_violation:
-                return "That's impossible!"
-            else:
-                return "That's impossible!"
+            return "That's impossible!"
     
     def handle_parents_statement(self, parent1_name: str, parent2_name: str, child_name: str) -> str:
         """Handle parents-child relationship statement"""

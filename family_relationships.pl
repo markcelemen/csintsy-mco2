@@ -122,12 +122,18 @@ is_aunt_of(AuntName, NephewNieceName) :-
 
 % Ancestor relationships (includes parents, grandparents, great-grandparents, etc.)
 has_ancestor(Descendant, Ancestor) :- 
+    has_ancestor(Descendant, Ancestor, 20).  % Depth-limited to 20 generations
+
+has_ancestor(Descendant, Ancestor, Depth) :- 
+    Depth > 0,
     has_parent(Descendant, Ancestor),
     Descendant \= Ancestor.
 
-has_ancestor(Descendant, Ancestor) :- 
+has_ancestor(Descendant, Ancestor, Depth) :- 
+    Depth > 0,
     has_parent(Descendant, MiddlePerson),
-    has_ancestor(MiddlePerson, Ancestor),
+    NewDepth is Depth - 1,
+    has_ancestor(MiddlePerson, Ancestor, NewDepth),
     Descendant \= Ancestor,
     Descendant \= MiddlePerson,
     MiddlePerson \= Ancestor.
@@ -406,3 +412,24 @@ logical_error(parent_child_having_child) :-
     has_parent(Child, Parent2),
     Parent1 \= Parent2,
     has_parent(Parent2, Parent1).
+
+% New constraints: Siblings cannot be ancestors/descendants
+logical_error(sibling_ancestor_impossible) :-
+    are_siblings(X, Y),
+    has_ancestor(X, Y).
+
+logical_error(sibling_ancestor_impossible) :-
+    are_siblings(X, Y),
+    has_ancestor(Y, X).
+
+% New constraints: Impossible cousin relationships
+logical_error(self_cousin) :-
+    are_cousins(X, X).
+
+logical_error(parent_child_as_cousins) :-
+    has_parent(Child, Parent),
+    are_cousins(Parent, Child).
+
+% Generation gap constraint
+logical_error(generation_gap_too_large) :-
+    has_ancestor(Descendant, Ancestor, 0).

@@ -45,13 +45,16 @@ share_parent(Person1, Person2) :-
     Person1 \= Person2.
 
 % Explicit and inferred siblings
+% Sibling detection through shared parents OR explicit declaration
 are_siblings(Person1, Person2) :- 
     explicit_sibling(Person1, Person2),
     Person1 \= Person2.
 
 are_siblings(Person1, Person2) :- 
     share_parent(Person1, Person2),
-    Person1 \= Person2.
+    Person1 \= Person2,
+    % Ensure we do not have conflicting explicit declarations
+    \+ (explicit_sibling(Person1, Person3), Person3 \= Person2).
 
 % Gender-specific siblings
 is_male_sibling(BrotherName, SiblingName) :- 
@@ -303,6 +306,21 @@ logical_error(invalid_aunt_gender) :-
     person_male(X).
 
 % Biological family constraints
+
+% Sibling constraint: Must share at least one parent if both have known parents
+logical_error(siblings_without_shared_parent) :-
+    explicit_sibling(A, B),
+    A \= B,
+    % Check if both have all their parents recorded
+    findall(P, has_parent(A, P), ParentsA),
+    findall(P, has_parent(B, P), ParentsB),
+    % Only trigger if we know both parents for both individuals
+    length(ParentsA, 2),
+    length(ParentsB, 2),
+    % Verify they do not share any common parent
+    \+ (member(P, ParentsA), member(P, ParentsB)).
+
+
 logical_error(too_many_biological_parents) :- 
     has_parent(Child, Parent1), 
     has_parent(Child, Parent2), 

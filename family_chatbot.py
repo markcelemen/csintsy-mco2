@@ -299,8 +299,8 @@ class FamilyRelationshipBot:
                 "person_their_own_ancestor", "person_their_own_descendant",
                 "cousin_grandparent_impossible", "relatives_having_child",
                 "siblings_having_child", "parent_child_having_child",
-                "siblings_without_shared_parent", "sibling_ancestor_impossible",  # Added new error type
-                "self_cousin", "parent_child_as_cousins", "generation_gap_too_large"  # Added new error types
+                "siblings_without_shared_parent", "sibling_ancestor_impossible",
+                "self_cousin", "parent_child_as_cousins", "generation_gap_too_large"
             ]
             
             for error_type in error_types:

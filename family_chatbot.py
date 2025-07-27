@@ -114,6 +114,9 @@ class FamilyRelationshipBot:
             self.clear_all_facts()
             return "All family relationship data has been cleared."
         
+        if user_input.lower() in ["clear", "cls"]:
+            return "clear_screen"
+        
         # Route to appropriate processor based on input type
         if user_input.endswith("?"):
             return self.process_family_question(user_input)
@@ -295,7 +298,8 @@ class FamilyRelationshipBot:
                 "aunt_parent_impossible", "sibling_grandparent_impossible",
                 "person_their_own_ancestor", "person_their_own_descendant",
                 "cousin_grandparent_impossible", "relatives_having_child",
-                "siblings_having_child", "parent_child_having_child"
+                "siblings_having_child", "parent_child_having_child",
+                "siblings_without_shared_parent"
             ]
             
             for error_type in error_types:
@@ -343,14 +347,18 @@ class FamilyRelationshipBot:
                         if self.verify_relationship_exists(check_query):
                             return False  # Would create a circular relationship
             
-            # If no circular relationship found, proceed with adding facts
-            for fact in fact_list:
+            # Separate sibling facts from other facts
+            sibling_facts = [f for f in fact_list if "explicit_sibling" in f]
+            other_facts = [f for f in fact_list if "explicit_sibling" not in f]
+            
+            # First process non-sibling facts
+            for fact in other_facts:
                 # Skip if fact already exists
                 if not self.fact_already_exists(fact):
                     self.prolog_engine.assertz(fact)
                     added_facts.append(fact)
                 
-                # Check for logical errors after each addition with safe error detection
+                # Check for logical errors after each addition
                 if self.detect_logical_errors():
                     # Rollback all added facts
                     for rollback_fact in added_facts:
@@ -359,6 +367,26 @@ class FamilyRelationshipBot:
                         except:
                             pass
                     return False
+            
+            # Temporarily store sibling facts to check for errors
+            temp_added_siblings = []
+            for fact in sibling_facts:
+                # Skip if fact already exists
+                if not self.fact_already_exists(fact):
+                    self.prolog_engine.assertz(fact)
+                    temp_added_siblings.append(fact)
+                    added_facts.append(fact)  # Add to main list for potential rollback
+            
+            # Check for logical errors after adding all sibling facts
+            if temp_added_siblings and self.detect_logical_errors():
+                # Rollback all sibling facts
+                for rollback_fact in temp_added_siblings:
+                    try:
+                        self.prolog_engine.retract(rollback_fact)
+                        added_facts.remove(rollback_fact)  # Remove from added_facts
+                    except:
+                        pass
+                return False
             
             return True
         except Exception as e:
@@ -405,8 +433,25 @@ class FamilyRelationshipBot:
         if self.safely_add_facts(facts_to_add):
             return "OK! I learned something."
         else:
-            return "That's impossible!"
-    
+            # Check for specific sibling constraint violation
+            sibling_violation = False
+            try:
+                # Check if the child has any siblings with whom they don't share parents
+                query = f"explicit_sibling('{child_name}', Sibling), " \
+                        f"Sibling \\= '{child_name}', " \
+                        f"has_parent('{child_name}', _), " \
+                        f"has_parent(Sibling, _), " \
+                        f"\\+ (has_parent('{child_name}', P), has_parent(Sibling, P))"
+                if list(self.prolog_engine.query(query)):
+                    sibling_violation = True
+            except:
+                pass
+            
+            if sibling_violation:
+                return "That's impossible!"
+            else:
+                return "That's impossible!"
+        
     def handle_mother_statement(self, mother_name: str, child_name: str) -> str:
         """Handle mother-child relationship statement"""
         if self.verify_relationship_exists(f"is_mom('{mother_name}', '{child_name}')"):
@@ -420,7 +465,24 @@ class FamilyRelationshipBot:
         if self.safely_add_facts(facts_to_add):
             return "OK! I learned something."
         else:
-            return "That's impossible!"
+            # Check for specific sibling constraint violation
+            sibling_violation = False
+            try:
+                # Check if the child has any siblings with whom they don't share parents
+                query = f"explicit_sibling('{child_name}', Sibling), " \
+                        f"Sibling \\= '{child_name}', " \
+                        f"has_parent('{child_name}', _), " \
+                        f"has_parent(Sibling, _), " \
+                        f"\\+ (has_parent('{child_name}', P), has_parent(Sibling, P))"
+                if list(self.prolog_engine.query(query)):
+                    sibling_violation = True
+            except:
+                pass
+            
+            if sibling_violation:
+                return "That's impossible!"
+            else:
+                return "That's impossible!"
     
     def handle_parents_statement(self, parent1_name: str, parent2_name: str, child_name: str) -> str:
         """Handle parents-child relationship statement"""
@@ -548,7 +610,7 @@ class FamilyRelationshipBot:
             return "That's impossible!"
     
     def handle_siblings_statement(self, sibling1_name: str, sibling2_name: str) -> str:
-        """Handle siblings relationship statement"""
+        """Handle siblings relationship statement without immediate parent check"""
         if self.verify_relationship_exists(f"are_siblings('{sibling1_name}', '{sibling2_name}')"):
             return "I already knew that."
         
@@ -561,9 +623,9 @@ class FamilyRelationshipBot:
             return "OK! I learned something."
         else:
             return "That's impossible!"
-    
+
     def handle_brother_statement(self, brother_name: str, sibling_name: str) -> str:
-        """Handle brother relationship statement"""
+        """Handle brother relationship statement without immediate parent check"""
         if self.verify_relationship_exists(f"is_male_sibling('{brother_name}', '{sibling_name}')"):
             return "I already knew that."
         
@@ -577,9 +639,9 @@ class FamilyRelationshipBot:
             return "OK! I learned something."
         else:
             return "That's impossible!"
-    
+
     def handle_sister_statement(self, sister_name: str, sibling_name: str) -> str:
-        """Handle sister relationship statement"""
+        """Handle sister relationship statement without immediate parent check"""
         if self.verify_relationship_exists(f"is_female_sibling('{sister_name}', '{sibling_name}')"):
             return "I already knew that."
         
@@ -1040,7 +1102,13 @@ class FamilyRelationshipBot:
             parent_relationships = len(list(self.prolog_engine.query("has_parent(_, _)")))
             male_individuals = len(list(self.prolog_engine.query("person_male(_)")))
             female_individuals = len(list(self.prolog_engine.query("person_female(_)")))
-            sibling_relationships = len(list(self.prolog_engine.query("explicit_sibling(_, _)")))
+            
+            # Count unique sibling pairs (avoid double-counting)
+            sibling_pairs = set()
+            for result in self.prolog_engine.query("explicit_sibling(A, B), A @< B"):
+                pair = tuple(sorted([result["A"], result["B"]]))
+                sibling_pairs.add(pair)
+            sibling_relationships = len(sibling_pairs)
             
             # Count more relationship types
             grandparent_relationships = len(list(self.prolog_engine.query("explicit_grandparent(_, _)")))
@@ -1051,12 +1119,12 @@ class FamilyRelationshipBot:
                 • Parent-child relationships: {parent_relationships}
                 • Male individuals: {male_individuals}
                 • Female individuals: {female_individuals}
-                • Explicit sibling relationships: {sibling_relationships // 2 if sibling_relationships > 0 else 0}
+                • Sibling relationships: {sibling_relationships}
                 • Grandparent relationships: {grandparent_relationships}
                 • Uncle relationships: {uncle_relationships}
                 • Aunt relationships: {aunt_relationships}
-                • Total stored facts: {parent_relationships + male_individuals + female_individuals + sibling_relationships + grandparent_relationships + uncle_relationships + aunt_relationships}"""
-            return summary.strip()
+                • Total stored facts: {parent_relationships + male_individuals + female_individuals + (sibling_relationships * 2) + grandparent_relationships + uncle_relationships + aunt_relationships}"""
+            return summary
         except Exception as e:
             return f"Error retrieving knowledge base summary: {e}"
     
@@ -1122,6 +1190,7 @@ class FamilyRelationshipBot:
         • help - Show this help information
         • status - Display knowledge base summary
         • reset - Clear all stored family data
+        • clear/cls - Clear the screen
         • exit/quit/goodbye - Exit the program
 
         NAME REQUIREMENTS:
@@ -1142,7 +1211,9 @@ class FamilyRelationshipBot:
 
         BIOLOGICAL CONSTRAINTS:
         - Relatives cannot have children together
-        - A person can only have one biological father and one biological mother (same sex is not allowed)
+        - A person can only have one biological father and one biological mother
+        - Siblings must share at least one biological parent
+        - Gender consistency is enforced (fathers must be male, mothers female, etc.)
                 """
         return help_content.strip()
 
@@ -1160,14 +1231,18 @@ def run_family_chatbot():
         while True:
             user_input = input("\n> ")
             
-            # Add error handling around the main processing
             try:
                 response = chatbot.execute_user_input(user_input)
                 
                 if response == "exit_command":
                     print("\nThank you for using FamiLink! Goodbye!")
                     break
-                
+                    
+                if response == "clear_screen":
+                    # Clear screen command for better UX
+                    os.system('cls' if os.name == 'nt' else 'clear')
+                    continue
+                    
                 print(response)
             except Exception as e:
                 print("Sorry, I encountered an error processing your request.")

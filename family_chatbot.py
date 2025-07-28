@@ -389,22 +389,13 @@ class FamilyRelationshipBot:
             
             # Check for logical errors after adding all sibling facts
             if temp_added_siblings and self.detect_logical_errors():
-                # Rollback all sibling facts
-                for rollback_fact in temp_added_siblings:
+                # Rollback all facts (both non-sibling and sibling) because we are in one transaction
+                for rollback_fact in added_facts:
                     try:
                         self.prolog_engine.retract(rollback_fact)
-                        # Also remove the symmetric fact
-                        symmetric_fact = rollback_fact.replace(
-                            rollback_fact.split("'")[1], 
-                            rollback_fact.split("'")[3]
-                        ).replace(
-                            rollback_fact.split("'")[3],
-                            rollback_fact.split("'")[1]
-                        )
-                        self.prolog_engine.retract(symmetric_fact)
-                        added_facts.remove(rollback_fact)
                     except:
                         pass
+                return False
             
             return True
         except Exception as e:

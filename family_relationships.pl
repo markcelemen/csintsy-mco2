@@ -421,7 +421,3 @@ logical_error(self_cousin) :-
 logical_error(parent_child_as_cousins) :-
     has_parent(Child, Parent),
     are_cousins(Parent, Child).
-
-% Generation gap constraint
-logical_error(generation_gap_too_large) :-
-    has_ancestor(_Descendant, _Ancestor, 0).  

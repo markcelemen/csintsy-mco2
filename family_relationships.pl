@@ -121,18 +121,24 @@ is_aunt_of(AuntName, NephewNieceName) :-
 % EXTENDED FAMILY RELATIONS   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Ancestor relationships (includes parents, grandparents, great-grandparents, etc.)
-has_ancestor(Descendant, Ancestor) :-
-    has_parent(Descendant, Ancestor).
+% A persons ancestor is either a direct ascendant (parent/grandparent)
+% or an ancestor of one of their direct ascendants.
 
-has_ancestor(Descendant, Ancestor) :-
-    has_parent(Descendant, Parent),
-    has_ancestor(Parent, Ancestor).
+% Define a direct ascendant as a parent or grandparent.
+direct_ascendant(Descendant, Ascendant) :- has_parent(Descendant, Ascendant).
+direct_ascendant(Descendant, Ascendant) :- has_grandparent(Descendant, Ascendant).
 
-% Direct implementation of grandparents as ancestors
-has_ancestor(Descendant, GrandAncestor) :-
-    has_grandparent(Descendant, GrandAncestor),
-    Descendant \= GrandAncestor.
+% Base case: An ancestor is a direct ascendant.
+has_ancestor(Descendant, Ancestor) :-
+    direct_ascendant(Descendant, Ancestor).
+
+% Recursive case: An ancestor is an ancestor of a direct ascendant.
+% This rule can now chain multiple grandparent links together.
+has_ancestor(Descendant, Ancestor) :-
+    direct_ascendant(Descendant, Intermediate),
+    Descendant \= Intermediate,
+    has_ancestor(Intermediate, Ancestor).
+% === END OF CORRECTED LOGIC ===
 
 % Descendant relationships (reverse of ancestor)
 has_descendant(Ancestor, Descendant) :-

@@ -812,87 +812,17 @@ class FamilyRelationshipBot:
             return "No"
     
     def answer_relatives_question(self, person1_name: str, person2_name: str) -> str:
-        """Answer relatives relationship question with comprehensive relationship checking"""
+        """Answer relatives relationship question with a unified Prolog query."""
         if person1_name == person2_name:
-            return "Yes"
+            return "Yes"  # A person is trivially related to themselves.
         
         try:
-            # Check simple direct relationships first (for efficiency)
-            direct_queries = [
-                f"has_parent('{person1_name}', '{person2_name}')",
-                f"has_parent('{person2_name}', '{person1_name}')",
-                f"are_siblings('{person1_name}', '{person2_name}')",
-                f"has_grandparent('{person1_name}', '{person2_name}')",
-                f"has_grandparent('{person2_name}', '{person1_name}')",
-                f"is_uncle_of('{person1_name}', '{person2_name}')",
-                f"is_uncle_of('{person2_name}', '{person1_name}')",
-                f"is_aunt_of('{person1_name}', '{person2_name}')",
-                f"is_aunt_of('{person2_name}', '{person1_name}')"
-            ]
-            
-            for query in direct_queries:
-                if self.verify_relationship_exists(query):
-                    return "Yes"
-            
-            # Check for common ancestor relationship (covers cousins, etc.)
-            common_ancestor_query = (
-                f"common_ancestor('{person1_name}', '{person2_name}', _)"
-            )
-            
-            if self.verify_relationship_exists(common_ancestor_query):
+            # Use the powerful, consolidated family_related predicate in Prolog
+            query = f"family_related('{person1_name}', '{person2_name}')"
+            if self.verify_relationship_exists(query):
                 return "Yes"
-            
-            # Add special check for grandparent-grandchild relationships through an intermediate parent
-            gp_relation_query = (
-                f"has_parent('{person1_name}', P), has_parent(P, '{person2_name}')"
-            )
-            if self.verify_relationship_exists(gp_relation_query):
-                return "Yes"
-            
-            gp_relation_query = (
-                f"has_parent('{person2_name}', P), has_parent(P, '{person1_name}')"
-            )
-            if self.verify_relationship_exists(gp_relation_query):
-                return "Yes"
-            
-            # Check great-grandparent relationship explicitly
-            ggp_relation_query = (
-                f"has_parent('{person1_name}', P1), has_parent(P1, P2), has_parent(P2, '{person2_name}')"
-            )
-            if self.verify_relationship_exists(ggp_relation_query):
-                return "Yes"
-            
-            ggp_relation_query = (
-                f"has_parent('{person2_name}', P1), has_parent(P1, P2), has_parent(P2, '{person1_name}')"
-            )
-            if self.verify_relationship_exists(ggp_relation_query):
-                return "Yes"
-            
-            # Check for cousin relationship explicitly
-            cousin_query = (
-                f"has_parent('{person1_name}', P1), "
-                f"has_parent('{person2_name}', P2), "
-                f"are_siblings(P1, P2)"
-            )
-            if self.verify_relationship_exists(cousin_query):
-                return "Yes"
-            
-            # Check for second-cousin relationship explicitly
-            second_cousin_query = (
-                f"has_parent('{person1_name}', P1), "
-                f"has_parent('{person2_name}', P2), "
-                f"has_parent(P1, GP1), "
-                f"has_parent(P2, GP2), "
-                f"are_siblings(GP1, GP2)"
-            )
-            if self.verify_relationship_exists(second_cousin_query):
-                return "Yes"
-            
-            # Final fallback check
-            if self.verify_relationship_exists(f"family_related('{person1_name}', '{person2_name}')"):
-                return "Yes"
-                
-            return "No"
+            else:
+                return "No"
         except Exception:
             return "No"
     

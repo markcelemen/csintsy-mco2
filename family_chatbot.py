@@ -7,8 +7,27 @@ import os
 import re
 import sys
 import time
+import signal
 from pyswip import Prolog
 from typing import List, Optional, Dict, Any
+
+class TimeoutError(Exception):
+    pass
+
+class time_limit:
+    """Context manager for timing out function calls"""
+    def __init__(self, seconds):
+        self.seconds = seconds
+        
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        signal.alarm(0)
+        
+    def handle_timeout(self, signum, frame):
+        raise TimeoutError()
 
 class FamilyRelationshipBot:
     """
@@ -248,31 +267,21 @@ class FamilyRelationshipBot:
         return "I don't understand that question format. Please check the help for valid patterns."
     
     def verify_relationship_exists(self, query: str) -> bool:
-        """
-        Check if a relationship exists in the knowledge base with improved timeout handling.
-        
-        Args:
-            query: Prolog query string
-            
-        Returns:
-            True if relationship exists, False otherwise
-        """
+        """Check if a relationship exists with timeout protection"""
         try:
-            # Set a longer timeout for complex queries
-            start_time = time.time()
-            query_results = []
-            
-            for result in self.prolog_engine.query(query):
-                # Check if we've exceeded the timeout
-                if time.time() - start_time > 10.0:  # 10 second timeout (increased from 2)
-                    break
-                query_results.append(result)
+            # Add this context manager (requires time_limit implementation)
+            with time_limit(5):  # 5-second timeout
+                query_results = []
                 
-                # We only need one result to verify existence
-                if len(query_results) > 0:
-                    break
-            
-            return len(query_results) > 0
+                for result in self.prolog_engine.query(query):
+                    query_results.append(result)
+                    if len(query_results) > 0:  # Early exit if we find a match
+                        break
+                
+                return len(query_results) > 0
+                
+        except TimeoutError:
+            return False
         except Exception:
             return False
     
@@ -384,10 +393,18 @@ class FamilyRelationshipBot:
                 for rollback_fact in temp_added_siblings:
                     try:
                         self.prolog_engine.retract(rollback_fact)
-                        added_facts.remove(rollback_fact)  # Remove from added_facts
+                        # Also remove the symmetric fact
+                        symmetric_fact = rollback_fact.replace(
+                            rollback_fact.split("'")[1], 
+                            rollback_fact.split("'")[3]
+                        ).replace(
+                            rollback_fact.split("'")[3],
+                            rollback_fact.split("'")[1]
+                        )
+                        self.prolog_engine.retract(symmetric_fact)
+                        added_facts.remove(rollback_fact)
                     except:
                         pass
-                return False
             
             return True
         except Exception as e:
@@ -431,6 +448,8 @@ class FamilyRelationshipBot:
             f"person_male('{father_name}')"
         ]
         
+        if self.verify_relationship_exists(f"person_female('{father_name}')"):
+            return "That's impossible!"
         if self.safely_add_facts(facts_to_add):
             return "OK! I learned something."
         else:
@@ -446,6 +465,8 @@ class FamilyRelationshipBot:
             f"person_female('{mother_name}')"
         ]
         
+        if self.verify_relationship_exists(f"person_male('{mother_name}')"):
+            return "That's impossible!"
         if self.safely_add_facts(facts_to_add):
             return "OK! I learned something."
         else:
@@ -824,10 +845,7 @@ class FamilyRelationshipBot:
             
             # Check for common ancestor relationship (covers cousins, etc.)
             common_ancestor_query = (
-                f"has_ancestor('{person1_name}', A), "
-                f"has_ancestor('{person2_name}', A), "
-                f"'{person1_name}' \\= A, "
-                f"'{person2_name}' \\= A"
+                f"common_ancestor('{person1_name}', '{person2_name}', _)"
             )
             
             if self.verify_relationship_exists(common_ancestor_query):

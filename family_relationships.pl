@@ -73,12 +73,16 @@ has_grandchild(GrandparentName, GrandchildName) :-
     explicit_grandparent(GrandparentName, GrandchildName),
     GrandparentName \= GrandchildName.
 
+% === START OF CORRECTED LOGIC ===
+% The previous rule failed to correctly infer multi-step relationships.
+% This new rule correctly finds the grandchild s parent first, then that parent s parent.
 has_grandchild(GrandparentName, GrandchildName) :-
-    has_parent(MiddleGeneration, GrandparentName),
     has_parent(GrandchildName, MiddleGeneration),
+    has_parent(MiddleGeneration, GrandparentName),
     GrandparentName \= GrandchildName,
     GrandparentName \= MiddleGeneration,
     MiddleGeneration \= GrandchildName.
+% === END OF CORRECTED LOGIC ===
 
 has_grandparent(GrandchildName, GrandparentName) :-
     has_grandchild(GrandparentName, GrandchildName).
@@ -121,7 +125,7 @@ is_aunt_of(AuntName, NephewNieceName) :-
 % EXTENDED FAMILY RELATIONS   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% A persons ancestor is either a direct ascendant (parent/grandparent)
+% A person s ancestor is either a direct ascendant (parent/grandparent)
 % or an ancestor of one of their direct ascendants.
 
 % Define a direct ascendant as a parent or grandparent.
@@ -138,7 +142,6 @@ has_ancestor(Descendant, Ancestor) :-
     direct_ascendant(Descendant, Intermediate),
     Descendant \= Intermediate,
     has_ancestor(Intermediate, Ancestor).
-% === END OF CORRECTED LOGIC ===
 
 % Descendant relationships (reverse of ancestor)
 has_descendant(Ancestor, Descendant) :-

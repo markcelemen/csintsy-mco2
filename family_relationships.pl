@@ -123,36 +123,25 @@ is_aunt_of(AuntName, NephewNieceName) :-
 % EXTENDED FAMILY RELATIONS   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Optimized relative checking
+are_related(A, B) :-
+    A \= B,
+    (has_ancestor(A, B) 
+    ; has_ancestor(B, A) 
+    ; (common_ancestor(A, B, _), !)).
+
 % Ancestor relationships (includes parents, grandparents, great-grandparents, etc.)
 has_ancestor(Descendant, Ancestor) :- 
-    has_ancestor(Descendant, Ancestor, 20).  % Depth-limited to 20 generations
+    has_parent(Descendant, Ancestor).
 
-has_ancestor(Descendant, Ancestor, Depth) :- 
-    Depth > 0,
-    has_parent(Descendant, Ancestor),
-    Descendant \= Ancestor.
-
-has_ancestor(Descendant, Ancestor, Depth) :- 
-    Depth > 0,
-    has_parent(Descendant, MiddlePerson),
-    NewDepth is Depth - 1,
-    has_ancestor(MiddlePerson, Ancestor, NewDepth),
-    Descendant \= Ancestor,
-    Descendant \= MiddlePerson,
-    MiddlePerson \= Ancestor.
+has_ancestor(Descendant, Ancestor) :- 
+    has_parent(Descendant, Parent),
+    has_ancestor(Parent, Ancestor).
 
 % Direct implementation of grandparents as ancestors
 has_ancestor(Descendant, GrandAncestor) :-
     has_grandparent(Descendant, GrandAncestor),
     Descendant \= GrandAncestor.
-
-% Great-grandparent relationships as ancestors
-has_ancestor(Descendant, GreatGrandAncestor) :-
-    has_parent(Descendant, Parent),
-    has_grandparent(Parent, GreatGrandAncestor),
-    Descendant \= GreatGrandAncestor,
-    Descendant \= Parent,
-    Parent \= GreatGrandAncestor.
 
 % Descendant relationships (reverse of ancestor)
 has_descendant(Ancestor, Descendant) :- 
@@ -233,14 +222,6 @@ family_related(PersonA, PersonB) :-
             has_parent(ParentA, GrandparentA),
             has_parent(ParentB, GrandparentB),
             are_siblings(GrandparentA, GrandparentB)
-        )
-    ;   % PersonB is a sibling of a parent of PersonA
-        (   has_parent(PersonA, ParentA),
-            are_siblings(ParentA, PersonB)
-        )
-    ;   % PersonA is a sibling of a parent of PersonB
-        (   has_parent(PersonB, ParentB),
-            are_siblings(ParentB, PersonA)
         )
     ).
 

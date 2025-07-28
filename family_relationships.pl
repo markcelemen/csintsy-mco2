@@ -2,6 +2,9 @@
 % FAMILY RELATIONSHIP RULES (Knowledge Base)
 % ====================================================================
 
+% Allow discontiguous has_ancestor/2 predicates
+:- discontiguous has_ancestor/2.
+
 % Dynamic predicates for family facts
 :- dynamic person_male/1.
 :- dynamic person_female/1.
@@ -10,10 +13,6 @@
 :- dynamic explicit_uncle/2.
 :- dynamic explicit_aunt/2.
 :- dynamic explicit_grandparent/2.
-
-% To remove warnings
-:- discontiguous has_ancestor/2.
-:- style_check(-singleton).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CORE FAMILY RELATIONSHIPS  %
@@ -235,6 +234,14 @@ family_related(PersonA, PersonB) :-
             has_parent(ParentB, GrandparentB),
             are_siblings(GrandparentA, GrandparentB)
         )
+    ;   % PersonB is a sibling of a parent of PersonA
+        (   has_parent(PersonA, ParentA),
+            are_siblings(ParentA, PersonB)
+        )
+    ;   % PersonA is a sibling of a parent of PersonB
+        (   has_parent(PersonB, ParentB),
+            are_siblings(ParentB, PersonA)
+        )
     ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -436,4 +443,4 @@ logical_error(parent_child_as_cousins) :-
 
 % Generation gap constraint
 logical_error(generation_gap_too_large) :-
-    has_ancestor(Descendant, Ancestor, 0).
+    has_ancestor(_Descendant, _Ancestor, 0).

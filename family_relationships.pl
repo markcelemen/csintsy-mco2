@@ -11,6 +11,10 @@
 :- dynamic explicit_aunt/2.
 :- dynamic explicit_grandparent/2.
 
+% To remove warnings
+:- discontiguous has_ancestor/2.
+:- style_check(-singleton).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CORE FAMILY RELATIONSHIPS  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

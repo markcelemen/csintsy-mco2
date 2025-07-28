@@ -424,7 +424,7 @@ logical_error(parent_child_having_child) :-
     Parent1 \= Parent2,
     has_parent(Parent2, Parent1).
 
-% New constraints: Siblings cannot be ancestors/descendants
+% Siblings cannot be ancestors/descendants
 logical_error(sibling_ancestor_impossible) :-
     are_siblings(X, Y),
     has_ancestor(X, Y).
@@ -433,7 +433,7 @@ logical_error(sibling_ancestor_impossible) :-
     are_siblings(X, Y),
     has_ancestor(Y, X).
 
-% New constraints: Impossible cousin relationships
+% Impossible cousin relationships
 logical_error(self_cousin) :-
     are_cousins(X, X).
 
@@ -443,4 +443,4 @@ logical_error(parent_child_as_cousins) :-
 
 % Generation gap constraint
 logical_error(generation_gap_too_large) :-
-    has_ancestor(_Descendant, _Ancestor, 0).
+    has_ancestor(_Descendant, _Ancestor, 0).  

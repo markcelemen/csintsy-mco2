@@ -18,14 +18,14 @@ class time_limit:
     """Context manager for timing out function calls"""
     def __init__(self, seconds):
         self.seconds = seconds
-        
+
     def __enter__(self):
         signal.signal(signal.SIGALRM, self.handle_timeout)
         signal.alarm(self.seconds)
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         signal.alarm(0)
-        
+
     def handle_timeout(self, signum, frame):
         raise TimeoutError()
 
@@ -44,12 +44,17 @@ class FamilyRelationshipBot:
         """
         self.prolog_engine = Prolog()
         
-        # Verify and load the Prolog knowledge base
-        if not os.path.exists(knowledge_file):
-            raise FileNotFoundError(f"Knowledge base file not found: {knowledge_file}")
+        # Get the directory where the script is located
+        script_dir = os.path.dirname(__file__) 
+        # Create an absolute path to the knowledge file
+        absolute_knowledge_path = os.path.join(script_dir, knowledge_file) 
+
+        # Verify and load the Prolog knowledge base using the absolute path
+        if not os.path.exists(absolute_knowledge_path):
+            raise FileNotFoundError(f"Knowledge base file not found: {absolute_knowledge_path}")
         
-        self.prolog_engine.consult(knowledge_file)
-        print(f"Family relationship knowledge base loaded from {knowledge_file}")
+        self.prolog_engine.consult(absolute_knowledge_path)
+        print(f"Family relationship knowledge base loaded from {absolute_knowledge_path}")
     
     def clear_all_facts(self):
         """Remove all dynamic facts from the knowledge base"""
@@ -65,11 +70,11 @@ class FamilyRelationshipBot:
                     if parameter_count == 1:
                         existing_facts = list(self.prolog_engine.query(f"{fact_type}(Person)"))
                         for fact in existing_facts:
-                            self.prolog_engine.retract(f"{fact_type}({fact['Person']})")
+                            self.prolog_engine.retract(f"{fact_type}('{fact['Person']}')")
                     else:  # parameter_count == 2
                         existing_facts = list(self.prolog_engine.query(f"{fact_type}(Person1, Person2)"))
                         for fact in existing_facts:
-                            self.prolog_engine.retract(f"{fact_type}({fact['Person1']}, {fact['Person2']})")
+                            self.prolog_engine.retract(f"{fact_type}('{fact['Person1']}', '{fact['Person2']}')")
                 except Exception as e:
                     continue  # Skip if fact type doesn't exist or is empty
         except Exception:
@@ -88,7 +93,7 @@ class FamilyRelationshipBot:
         return (name.isalpha() and 
                 len(name) > 0 and
                 name[0].isupper() and 
-                name[1:].islower())
+                (len(name) == 1 or name[1:].islower()))
     
     def standardize_name(self, name: str) -> str:
         """
@@ -188,7 +193,7 @@ class FamilyRelationshipBot:
         
         # Try to match statement against patterns
         for pattern, handler_method in statement_handlers:
-            pattern_match = re.match(pattern, statement, re.IGNORECASE)
+            pattern_match = re.fullmatch(pattern, statement, re.IGNORECASE)
             if pattern_match:
                 captured_groups = pattern_match.groups()
                 
@@ -250,7 +255,7 @@ class FamilyRelationshipBot:
         
         # Try to match question against patterns
         for pattern, handler_method in question_handlers:
-            pattern_match = re.match(pattern, question, re.IGNORECASE)
+            pattern_match = re.fullmatch(pattern, question, re.IGNORECASE)
             if pattern_match:
                 captured_groups = pattern_match.groups()
                 
@@ -779,21 +784,64 @@ class FamilyRelationshipBot:
         except Exception:
             return "No"
     
+    def _is_grandparent_of_type(self, grandchild_name: str, grandparent_name: str, gender_predicate: str) -> bool:
+        """
+        A robust, manual trace to check for grandparent relationships, bypassing pyswip's issues with compound queries.
+        
+        Args:
+            grandchild_name: The name of the grandchild.
+            grandparent_name: The name of the grandparent.
+            gender_predicate: The Prolog predicate to check for gender ('person_male' or 'person_female').
+        
+        Returns:
+            True if the relationship holds, False otherwise.
+        """
+        try:
+            # Step 1: Find the parent(s) of the grandchild.
+            parents_query = f"has_parent('{grandchild_name}', M)"
+            parents = list(self.prolog_engine.query(parents_query))
+            if not parents:
+                return False
+
+            # Step 2: For each parent, check if their parent is the potential grandparent.
+            for parent in parents:
+                middle_generation = parent["M"]
+                grandparent_query = f"has_parent('{middle_generation}', '{grandparent_name}')"
+                is_grandparent_link = bool(list(self.prolog_engine.query(grandparent_query)))
+                
+                # Step 3: If the parent link is found, verify the grandparent's gender.
+                if is_grandparent_link:
+                    gender_query = f"{gender_predicate}('{grandparent_name}')"
+                    has_correct_gender = bool(list(self.prolog_engine.query(gender_query)))
+                    if has_correct_gender:
+                        return True # Found a complete, valid chain.
+            
+            # If we check all parents and none lead to a valid grandparent, fail.
+            return False
+        except Exception:
+            return False
+
     def answer_grandfather_question(self, grandfather_name: str, grandchild_name: str) -> str:
-        """Answer grandfather relationship question"""
-        try:
-            result = self.verify_relationship_exists(f"is_grandfather('{grandfather_name}', '{grandchild_name}')")
-            return "Yes" if result else "No"
-        except Exception:
-            return "No"
-    
+        """Answers the grandfather question using the robust manual trace."""
+        # Also check explicit grandparent declaration as a shortcut.
+        if self.verify_relationship_exists(f"explicit_grandparent('{grandfather_name}','{grandchild_name}')") and \
+           self.verify_relationship_exists(f"person_male('{grandfather_name}')"):
+            return "Yes"
+        
+        # Use the robust checker that bypasses pyswip issues.
+        is_gf = self._is_grandparent_of_type(grandchild_name, grandfather_name, "person_male")
+        return "Yes" if is_gf else "No"
+
     def answer_grandmother_question(self, grandmother_name: str, grandchild_name: str) -> str:
-        """Answer grandmother relationship question"""
-        try:
-            result = self.verify_relationship_exists(f"is_grandmother('{grandmother_name}', '{grandchild_name}')")
-            return "Yes" if result else "No"
-        except Exception:
-            return "No"
+        """Answers the grandmother question using the robust manual trace."""
+        # Also check explicit grandparent declaration as a shortcut.
+        if self.verify_relationship_exists(f"explicit_grandparent('{grandmother_name}','{grandchild_name}')") and \
+           self.verify_relationship_exists(f"person_female('{grandmother_name}')"):
+            return "Yes"
+
+        # Use the robust checker that bypasses pyswip issues.
+        is_gm = self._is_grandparent_of_type(grandchild_name, grandmother_name, "person_female")
+        return "Yes" if is_gm else "No"
     
     def answer_uncle_question(self, uncle_name: str, nephew_niece_name: str) -> str:
         """Answer uncle relationship question"""
@@ -1135,8 +1183,13 @@ def run_family_chatbot():
         chatbot = FamilyRelationshipBot()
         
         while True:
-            user_input = input("\n> ")
-            
+            try:
+                user_input = input("\n> ")
+            except (KeyboardInterrupt, EOFError):
+                # Handle Ctrl+C, Ctrl+D, etc. gracefully
+                print("\nExiting FamiLink. Goodbye!")
+                break
+
             try:
                 response = chatbot.execute_user_input(user_input)
                 
@@ -1155,8 +1208,8 @@ def run_family_chatbot():
                 print(f"Error details: {str(e)}")
                 print("Please try a different query or type 'reset' to clear the knowledge base.")
     
-    except FileNotFoundError:
-        print("Error: Required Prolog knowledge base file 'family_relationships.pl' not found!")
+    except FileNotFoundError as e:
+        print(f"Error: Required Prolog knowledge base file not found!\nDetails: {e}")
         print("Please ensure both files are in the same directory.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")

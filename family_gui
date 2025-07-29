@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""
+FamiLink Family Relationship Chatbot - GUI Version
+"""
+
+import tkinter as tk
+from tkinter import scrolledtext, messagebox
+from family_chatbot import FamilyRelationshipBot
+import os
+
+class FamiLinkGUI(tk.Tk):
+    """
+    The main GUI class for the FamiLink Chatbot application.
+    """
+    def __init__(self):
+        super().__init__()
+
+        # --- Window Setup ---
+        self.title("FamiLink Chatbot")
+        self.geometry("600x700")
+        self.configure(bg="#f0f0f0")
+
+        # --- Initialize Chatbot Engine ---
+        try:
+            # Ensure the required files are present before starting
+            if not os.path.exists("family_chatbot.py") or not os.path.exists("family_relationships.pl"):
+                messagebox.showerror(
+                    "Missing Files", 
+                    "Error: `family_chatbot.py` and `family_relationships.pl` must be in the same directory as this GUI."
+                )
+                self.destroy()
+                return
+            self.chatbot = FamilyRelationshipBot()
+        except Exception as e:
+            messagebox.showerror("Initialization Error", f"Failed to initialize the chatbot engine: {e}")
+            self.destroy()
+            return
+
+        # --- GUI Widgets ---
+        self.create_widgets()
+
+    def create_widgets(self):
+        """Creates and arranges all the widgets in the main window."""
+        
+        # --- Main Frame ---
+        main_frame = tk.Frame(self, bg="#f0f0f0", padx=10, pady=10)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # --- Title Label ---
+        title_label = tk.Label(
+            main_frame, 
+            text="FamiLink - Family Relationship Chatbot", 
+            font=("Helvetica", 16, "bold"), 
+            bg="#f0f0f0", 
+            fg="#333"
+        )
+        title_label.pack(pady=(0, 10))
+
+        # --- Conversation Display Area ---
+        self.conversation_display = scrolledtext.ScrolledText(
+            main_frame,
+            wrap=tk.WORD,
+            state='disabled',
+            font=("Helvetica", 11),
+            bg="#ffffff",
+            fg="#333",
+            padx=10,
+            pady=10,
+            borderwidth=1,
+            relief="solid"
+        )
+        self.conversation_display.pack(fill=tk.BOTH, expand=True, pady=5)
+        self.conversation_display.tag_config('user', foreground="#00529B", font=("Helvetica", 11, "bold"))
+        self.conversation_display.tag_config('bot', foreground="#333333")
+        self.conversation_display.tag_config('error', foreground="#D8000C", font=("Helvetica", 11, "italic"))
+        self.conversation_display.tag_config('system', foreground="#4F8A10", font=("Helvetica", 11, "italic"))
+
+
+        # --- Input Frame ---
+        input_frame = tk.Frame(main_frame, bg="#f0f0f0")
+        input_frame.pack(fill=tk.X, pady=(10, 0))
+
+        # --- User Input Entry Box ---
+        self.user_input_entry = tk.Entry(
+            input_frame, 
+            font=("Helvetica", 11), 
+            borderwidth=1, 
+            relief="solid"
+        )
+        self.user_input_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=5)
+        self.user_input_entry.bind("<Return>", self.send_message)
+
+        # --- Send Button ---
+        self.send_button = tk.Button(
+            input_frame, 
+            text="Send", 
+            command=self.send_message, 
+            font=("Helvetica", 10, "bold"),
+            bg="#0078D7",
+            fg="white",
+            padx=10,
+            pady=5,
+            relief="flat"
+        )
+        self.send_button.pack(side=tk.LEFT, padx=(10, 0))
+
+        # --- Button Frame ---
+        button_frame = tk.Frame(main_frame, bg="#f0f0f0")
+        button_frame.pack(fill=tk.X, pady=10)
+
+        # --- Reset Button ---
+        self.reset_button = tk.Button(
+            button_frame, 
+            text="Reset Knowledge", 
+            command=self.reset_knowledge,
+            font=("Helvetica", 10),
+            bg="#e0e0e0",
+            fg="#333",
+            relief="flat"
+        )
+        self.reset_button.pack(side=tk.LEFT, padx=(0, 5))
+
+        # --- Help Button ---
+        self.help_button = tk.Button(
+            button_frame, 
+            text="Help", 
+            command=self.show_help,
+            font=("Helvetica", 10),
+            bg="#e0e0e0",
+            fg="#333",
+            relief="flat"
+        )
+        self.help_button.pack(side=tk.LEFT)
+        
+        # --- Initial Welcome Message ---
+        self.add_message("Welcome to FamiLink! Type 'help' or use the button for instructions.", "system")
+
+
+    def send_message(self, event=None):
+        """Handles sending a message from the user to the chatbot."""
+        user_text = self.user_input_entry.get().strip()
+        if not user_text:
+            return
+
+        self.add_message(user_text, "user")
+        self.user_input_entry.delete(0, tk.END)
+
+        # Process the input and get a response from the chatbot
+        try:
+            response = self.chatbot.execute_user_input(user_text)
+            if response == "exit_command":
+                self.add_message("Goodbye! Closing the application.", "system")
+                self.after(2000, self.destroy) # Close after 2 seconds
+            elif response == "clear_screen":
+                self.conversation_display.config(state='normal')
+                self.conversation_display.delete(1.0, tk.END)
+                self.add_message("Screen cleared.", "system")
+            else:
+                tag = "bot"
+                if "impossible" in response or "Invalid" in response:
+                    tag = "error"
+                self.add_message(response, tag)
+        except Exception as e:
+            self.add_message(f"An unexpected error occurred: {e}", "error")
+
+    def add_message(self, message: str, tag: str):
+        """
+        Adds a message to the conversation display with appropriate formatting.
+        
+        Args:
+            message: The text of the message to add.
+            tag: The tag for formatting ('user', 'bot', 'error', 'system').
+        """
+        self.conversation_display.config(state='normal')
+        
+        prefix = ""
+        if tag == 'user':
+            prefix = "You: "
+        elif tag == 'bot' or tag == 'error':
+            prefix = "FamiLink: "
+        
+        self.conversation_display.insert(tk.END, f"{prefix}{message}\n\n", (tag,))
+        self.conversation_display.config(state='disabled')
+        # Autoscroll to the bottom
+        self.conversation_display.see(tk.END)
+
+    def reset_knowledge(self):
+        """Clears the chatbot's knowledge base and the conversation display."""
+        if messagebox.askyesno("Confirm Reset", "Are you sure you want to clear all family relationships?"):
+            try:
+                self.chatbot.clear_all_facts()
+                self.conversation_display.config(state='normal')
+                self.conversation_display.delete(1.0, tk.END)
+                self.add_message("Knowledge base has been reset.", "system")
+            except Exception as e:
+                self.add_message(f"Error during reset: {e}", "error")
+
+    def show_help(self):
+        """Displays the help information in the conversation window."""
+        help_text = self.chatbot.display_help_information()
+        # Create a new Toplevel window for help
+        help_window = tk.Toplevel(self)
+        help_window.title("FamiLink Help")
+        help_window.geometry("550x600")
+        help_text_widget = scrolledtext.ScrolledText(help_window, wrap=tk.WORD, font=("Helvetica", 10), padx=10, pady=10)
+        help_text_widget.pack(fill=tk.BOTH, expand=True)
+        help_text_widget.insert(tk.END, help_text)
+        help_text_widget.config(state='disabled')
+
+
+if __name__ == "__main__":
+    app = FamiLinkGUI()
+    app.mainloop()

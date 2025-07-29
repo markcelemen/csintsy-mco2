@@ -40,36 +40,25 @@ is_daughter(Parent, Daughter) :-
     has_child(Parent, Daughter),
     person_female(Daughter).
 
-%% are_siblings(?Person1, ?Person2)
-%  Succeeds if Person1 and Person2 are siblings.
-%  This has been corrected to use multiple clauses for robustness.
-
-% Case 1: Two people are siblings if they share a parent.
+% --- Sibling Logic ---
 are_siblings(Person1, Person2) :-
     has_parent(Person1, Parent),
     has_parent(Person2, Parent),
     Person1 \= Person2.
 
-% Case 2: Two people are siblings if they have been explicitly declared as such.
-% Note: The symmetric case is not needed here because the Python controller
-% asserts the explicit_sibling/2 fact in both directions.
 are_siblings(Person1, Person2) :-
     explicit_sibling(Person1, Person2),
     Person1 \= Person2.
 
-
-%% is_brother(?Brother, ?Person)
-%  Succeeds if Brother is a brother of Person.
 is_brother(Brother, Person) :-
-    are_siblings(Brother, Person), % Uses the corrected, robust sibling rule
+    are_siblings(Brother, Person),
     person_male(Brother).
 
-%% is_sister(?Sister, ?Person)
-%  Succeeds if Sister is a sister of Person.
 is_sister(Sister, Person) :-
-    are_siblings(Sister, Person), % Uses the corrected, robust sibling rule
+    are_siblings(Sister, Person),
     person_female(Sister).
 
+% --- Grandparent, Aunt, Uncle Logic ---
 has_grandparent(Grandchild, Grandparent) :-
     (   explicit_grandparent(Grandparent, Grandchild)
     ;   has_parent(Grandchild, Parent),
@@ -105,11 +94,13 @@ is_aunt(NephewNiece, Aunt) :-
 % EXTENDED RELATIONSHIPS      %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-has_ancestor(Descendant, Ancestor) :-
-    has_parent(Descendant, Ancestor).
-has_ancestor(Descendant, Ancestor) :-
-    has_parent(Descendant, Intermediate),
-    has_ancestor(Intermediate, Ancestor).
+one_step_ancestor(Desc, Anc) :- has_parent(Desc, Anc).
+one_step_ancestor(Desc, Anc) :- has_grandparent(Desc, Anc).
+
+has_ancestor(Desc, Anc) :- one_step_ancestor(Desc, Anc).
+has_ancestor(Desc, Anc) :-
+    one_step_ancestor(Desc, Intermediate),
+    has_ancestor(Intermediate, Anc).
 
 is_great_grandparent(GreatGrandchild, GreatGrandparent) :-
     has_parent(GreatGrandchild, Parent),
@@ -140,6 +131,18 @@ logical_error('a person cannot be their own parent') :-
 logical_error('a person cannot be both male and female') :-
     person_male(X), person_female(X), !.
 
+logical_error('a person cannot be their own explicit relative (e.g., their own uncle)') :-
+    (   explicit_sibling(X, X)
+    ;   explicit_uncle(X, X)
+    ;   explicit_aunt(X, X)
+    ;   explicit_grandparent(X, X)
+    ), !.
+
+logical_error('a person cannot be both a parent and grandparent to the same person') :-
+    has_parent(Child, Person),
+    has_grandparent(Child, Person),
+    !.
+
 logical_error('there is a circular ancestor relationship') :-
     has_ancestor(X, Y), has_ancestor(Y, X), !.
 
@@ -165,3 +168,20 @@ logical_error('close relatives cannot have children together') :-
     has_parent(Child, Parent2),
     Parent1 \= Parent2,
     family_related(Parent1, Parent2), !.
+
+logical_error('a person cannot be a sibling of their ancestor or descendant') :-
+    are_siblings(A, B),
+    (has_ancestor(A, B) ; has_ancestor(B, A)),
+    !.
+
+logical_error('siblings with four known parents must share at least one parent') :-
+    are_siblings(Person1, Person2),
+    findall(P1, has_parent(Person1, P1), Parents1),
+    sort(Parents1, UniqueParents1),
+    length(UniqueParents1, 2),
+    findall(P2, has_parent(Person2, P2), Parents2),
+    sort(Parents2, UniqueParents2),
+    length(UniqueParents2, 2),
+    intersection(UniqueParents1, UniqueParents2, Common),
+    Common == [],
+    !.

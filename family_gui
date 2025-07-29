@@ -11,8 +11,6 @@ import os
 class FamiLinkGUI(tk.Tk):
     """
     The main GUI class for the FamiLink Chatbot application.
-    NOTE: This GUI is single-threaded. Very complex queries that take a long
-    time to process may cause the window to become temporarily unresponsive.
     """
     def __init__(self):
         super().__init__()

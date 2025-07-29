@@ -11,6 +11,8 @@ import os
 class FamiLinkGUI(tk.Tk):
     """
     The main GUI class for the FamiLink Chatbot application.
+    NOTE: This GUI is single-threaded. Very complex queries that take a long
+    time to process may cause the window to become temporarily unresponsive.
     """
     def __init__(self):
         super().__init__()
@@ -196,14 +198,16 @@ class FamiLinkGUI(tk.Tk):
                 self.add_message(f"Error during reset: {e}", "error")
 
     def show_help(self):
-        """Displays the help information in the conversation window."""
+        """Displays the help information in a new window."""
         help_text = self.chatbot.display_help_information()
         # Create a new Toplevel window for help
         help_window = tk.Toplevel(self)
         help_window.title("FamiLink Help")
         help_window.geometry("550x600")
-        help_text_widget = scrolledtext.ScrolledText(help_window, wrap=tk.WORD, font=("Helvetica", 10), padx=10, pady=10)
-        help_text_widget.pack(fill=tk.BOTH, expand=True)
+        help_window.configure(bg="#f0f0f0")
+        
+        help_text_widget = scrolledtext.ScrolledText(help_window, wrap=tk.WORD, font=("Helvetica", 10), padx=10, pady=10, bg="#ffffff")
+        help_text_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         help_text_widget.insert(tk.END, help_text)
         help_text_widget.config(state='disabled')
 

@@ -6,6 +6,7 @@
 :- dynamic person_male/1.
 :- dynamic person_female/1.
 :- dynamic has_parent/2.
+:- dynamic spouse/2.
 :- dynamic explicit_sibling/2.
 :- dynamic explicit_uncle/2.
 :- dynamic explicit_aunt/2.
@@ -57,6 +58,19 @@ is_brother(Brother, Person) :-
 is_sister(Sister, Person) :-
     are_siblings(Sister, Person),
     person_female(Sister).
+
+% --- Spouse Logic ---
+is_husband(Husband, Spouse) :-
+    is_spouse(Husband, Spouse),
+    male(Husband).
+
+is_wife(Wife, Spouse) :-
+    is_spouse(Wife, Spouse),
+    female(Wife).
+
+is_spouse(Person1, Person2) :-
+    spouse(Person1, Person2).
+
 
 % --- Grandparent, Aunt, Uncle Logic ---
 has_grandparent(Grandchild, Grandparent) :-

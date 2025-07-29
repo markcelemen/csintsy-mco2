@@ -83,6 +83,7 @@ class FamilyRelationshipBot:
             (r"(\w+) is the father of (\w+)", self.handle_father_statement),
             (r"(\w+) is the mother of (\w+)", self.handle_mother_statement),
             (r"(\w+) and (\w+) are the parents of (\w+)", self.handle_parents_statement),
+            (r"(\w+) is a spouse of (\w+)", self.handle_spouse_statement),
             (r"(\w+) is a child of (\w+)", self.handle_child_statement),
             (r"(\w+) is a son of (\w+)", self.handle_son_statement),
             (r"(\w+) is a daughter of (\w+)", self.handle_daughter_statement),
@@ -120,6 +121,8 @@ class FamilyRelationshipBot:
             (r"is (\w+) the father of (\w+)", self._handle_q_is_father),
             (r"is (\w+) the mother of (\w+)", self._handle_q_is_mother),
             (r"are (\w+) and (\w+) the parents of (\w+)", self._handle_q_are_parents),
+            (r"is (\w+) a spouse of (\w+)", self._handle_q_is_spouse),
+            (r"are (\w+) and (\w+) spouses", self._handle_q_is_spouse),
             (r"is (\w+) a child of (\w+)", self._handle_q_is_child),
             (r"are (\w+) and (\w+) children of (\w+)", self._handle_q_are_children),
             (r"is (\w+) a son of (\w+)", self._handle_q_is_son),
@@ -137,6 +140,8 @@ class FamilyRelationshipBot:
             # "Who" Questions
             (r"who is the father of (\w+)", self._handle_q_who_father),
             (r"who is the mother of (\w+)", self._handle_q_who_mother),
+            (r"who is the spouse of (\w+)", self._handle_q_is_spouse_list),
+            (r"who are the spouses of (\w+)", self._handle_q_is_spouse_list),
             (r"who are the parents of (\w+)", self._handle_q_who_parents),
             (r"who are the children of (\w+)", self._handle_q_who_children),
             (r"who are the siblings of (\w+)", self._handle_q_who_siblings),
@@ -216,6 +221,10 @@ class FamilyRelationshipBot:
 
     def handle_parents_statement(self, p1: str, p2: str, c: str) -> str:
         return "OK! I learned something." if self.safely_add_facts([f"has_parent({c},{p1})", f"has_parent({c},{p2})"]) else "That's impossible!"
+    
+    def handle_spouse_statement(self, p1: str, p2: str) -> str:
+
+      return "OK! I learned something." if self.safely_add_facts([f"spouse({p1}, {p2})", f"spouse({p2}, {p1})" ]) else "That's impossible!"
 
     def handle_child_statement(self, c: str, p: str) -> str:
         return "OK! I learned something." if self.safely_add_facts([f"has_parent({c},{p})"]) else "That's impossible!"
@@ -268,6 +277,12 @@ class FamilyRelationshipBot:
 
     def _handle_q_are_parents(self, p1: str, p2: str, c: str) -> str:
         return self._ask_prolog_bool(f"(has_parent({c}, {p1}), has_parent({c}, {p2}))")
+    
+    def _handle_q_is_spouse(self, p1: str, p2: str) -> str:
+        return self._ask_prolog_bool(f"is_spouse({p1}, {p2})")
+    
+    def _handle_q_is_spouse_list(self, p1: str) -> str:
+        return self._find_prolog_all(f"is_spouse({p1}, X)")
 
     def _handle_q_is_child(self, c: str, p: str) -> str:
         return self._ask_prolog_bool(f"has_child({p}, {c})")

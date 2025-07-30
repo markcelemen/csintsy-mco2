@@ -69,7 +69,6 @@ The project uses a powerful combination of **Python** for the user interface and
 
    ```bash
    pip install pyswip
-````
 
 ---
 

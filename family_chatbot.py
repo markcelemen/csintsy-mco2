@@ -273,8 +273,8 @@ class FamilyRelationshipBot:
     def _handle_q_are_parents(self, p1: str, p2: str, c: str) -> str: return self._ask_prolog_bool(f"(has_parent({c}, {p1}), has_parent({c}, {p2}))")
     def _handle_q_is_child(self, c: str, p: str) -> str: return self._ask_prolog_bool(f"has_child({p}, {c})")
     def _handle_q_are_children(self, c1: str, c2: str, p: str) -> str: return self._ask_prolog_bool(f"(has_child({p}, {c1}), has_child({p}, {c2}))")
-    def _handle_q_is_son(self, c: str, p: str) -> str: return self._ask_prolog_bool(f"is_son({p}, {c})")
-    def _handle_q_is_daughter(self, c: str, p: str) -> str: return self._ask_prolog_bool(f"is_daughter({p}, {c})")
+    def _handle_q_is_son(self, c: str, p: str) -> str: return self._ask_prolog_bool(f"is_son({c}, {p})")
+    def _handle_q_is_daughter(self, c: str, p: str) -> str: return self._ask_prolog_bool(f"is_daughter({c}, {p})")
     def _handle_q_are_siblings(self, p1: str, p2: str) -> str: return self._ask_prolog_bool(f"are_siblings({p1}, {p2})")
     def _handle_q_is_brother(self, p: str, s: str) -> str: return self._ask_prolog_bool(f"is_brother({p}, {s})")
     def _handle_q_is_sister(self, p: str, s: str) -> str: return self._ask_prolog_bool(f"is_sister({p}, {s})")
@@ -428,7 +428,7 @@ Names must be a single word starting with a capital letter.
 def run_family_chatbot():
     """Main function to run the interactive Family Relationship Chatbot."""
     print("\n" + "=" * 70)
-    print("  Welcome to FamiLink - Untangling Family Trees, One Relation at a Time!")
+    print("  Welcome to FamiLink - Family Relationship Chatbot")
     print("  Type 'help' for detailed instructions or 'exit' to quit.")
     print("=" * 70)
     

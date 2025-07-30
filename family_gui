@@ -1,35 +1,42 @@
 #!/usr/bin/env python3
 """
 FamiLink Family Relationship Chatbot - GUI Version
+--------------------------------------------------
+A graphical user interface for the FamiLink chatbot, built with Tkinter.
 """
 
+import os
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
 from family_chatbot import FamilyRelationshipBot
-import os
 
 class FamiLinkGUI(tk.Tk):
     """
     The main GUI class for the FamiLink Chatbot application.
     """
+
     def __init__(self):
+        """Initializes the main window and the chatbot engine."""
         super().__init__()
 
         # --- Window Setup ---
         self.title("FamiLink Chatbot")
         self.geometry("600x700")
+        self.minsize(450, 500)
         self.configure(bg="#f0f0f0")
 
         # --- Initialize Chatbot Engine ---
         try:
             # Ensure the required files are present before starting
-            if not os.path.exists("family_chatbot.py") or not os.path.exists("family_relationships.pl"):
-                messagebox.showerror(
-                    "Missing Files", 
-                    "Error: `family_chatbot.py` and `family_relationships.pl` must be in the same directory as this GUI."
-                )
-                self.destroy()
-                return
+            required_files = ["family_chatbot.py", "family_relationships.pl"]
+            for f in required_files:
+                if not os.path.exists(f):
+                    messagebox.showerror(
+                        "Missing Files",
+                        f"Error: Required file `{f}` must be in the same directory as this GUI."
+                    )
+                    self.destroy()
+                    return
             self.chatbot = FamilyRelationshipBot()
         except Exception as e:
             messagebox.showerror("Initialization Error", f"Failed to initialize the chatbot engine: {e}")
@@ -41,22 +48,23 @@ class FamiLinkGUI(tk.Tk):
 
     def create_widgets(self):
         """Creates and arranges all the widgets in the main window."""
-        
-        # --- Main Frame ---
-        main_frame = tk.Frame(self, bg="#f0f0f0", padx=10, pady=10)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-        # --- Title Label ---
+        main_frame = tk.Frame(self, bg="#f0f0f0", padx=10, pady=10)
+        main_frame.grid(row=0, column=0, sticky="nsew")
+        main_frame.grid_rowconfigure(1, weight=1)
+        main_frame.grid_columnconfigure(0, weight=1)
+
         title_label = tk.Label(
-            main_frame, 
-            text="FamiLink - Family Relationship Chatbot", 
-            font=("Helvetica", 16, "bold"), 
-            bg="#f0f0f0", 
+            main_frame,
+            text="FamiLink - Family Relationship Chatbot",
+            font=("Helvetica", 16, "bold"),
+            bg="#f0f0f0",
             fg="#333"
         )
-        title_label.pack(pady=(0, 10))
+        title_label.grid(row=0, column=0, columnspan=2, pady=(0, 10))
 
-        # --- Conversation Display Area ---
         self.conversation_display = scrolledtext.ScrolledText(
             main_frame,
             wrap=tk.WORD,
@@ -69,49 +77,44 @@ class FamiLinkGUI(tk.Tk):
             borderwidth=1,
             relief="solid"
         )
-        self.conversation_display.pack(fill=tk.BOTH, expand=True, pady=5)
+        self.conversation_display.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=5)
         self.conversation_display.tag_config('user', foreground="#00529B", font=("Helvetica", 11, "bold"))
         self.conversation_display.tag_config('bot', foreground="#333333")
         self.conversation_display.tag_config('error', foreground="#D8000C", font=("Helvetica", 11, "italic"))
         self.conversation_display.tag_config('system', foreground="#4F8A10", font=("Helvetica", 11, "italic"))
 
-
-        # --- Input Frame ---
         input_frame = tk.Frame(main_frame, bg="#f0f0f0")
-        input_frame.pack(fill=tk.X, pady=(10, 0))
+        input_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(10, 0))
+        input_frame.grid_columnconfigure(0, weight=1)
 
-        # --- User Input Entry Box ---
         self.user_input_entry = tk.Entry(
-            input_frame, 
-            font=("Helvetica", 11), 
-            borderwidth=1, 
+            input_frame,
+            font=("Helvetica", 11),
+            borderwidth=1,
             relief="solid"
         )
-        self.user_input_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=5)
+        self.user_input_entry.grid(row=0, column=0, sticky="ew", ipady=5)
         self.user_input_entry.bind("<Return>", self.send_message)
+        self.user_input_entry.focus()
 
-        # --- Send Button ---
         self.send_button = tk.Button(
-            input_frame, 
-            text="Send", 
-            command=self.send_message, 
+            input_frame,
+            text="Send",
+            command=self.send_message,
             font=("Helvetica", 10, "bold"),
             bg="#0078D7",
             fg="white",
             padx=10,
-            pady=5,
             relief="flat"
         )
-        self.send_button.pack(side=tk.LEFT, padx=(10, 0))
+        self.send_button.grid(row=0, column=1, padx=(10, 0), ipady=2)
 
-        # --- Button Frame ---
         button_frame = tk.Frame(main_frame, bg="#f0f0f0")
-        button_frame.pack(fill=tk.X, pady=10)
+        button_frame.grid(row=3, column=0, columnspan=2, sticky="w", pady=10)
 
-        # --- Reset Button ---
         self.reset_button = tk.Button(
-            button_frame, 
-            text="Reset Knowledge", 
+            button_frame,
+            text="Reset Knowledge",
             command=self.reset_knowledge,
             font=("Helvetica", 10),
             bg="#e0e0e0",
@@ -120,10 +123,9 @@ class FamiLinkGUI(tk.Tk):
         )
         self.reset_button.pack(side=tk.LEFT, padx=(0, 5))
 
-        # --- Help Button ---
         self.help_button = tk.Button(
-            button_frame, 
-            text="Help", 
+            button_frame,
+            text="Help",
             command=self.show_help,
             font=("Helvetica", 10),
             bg="#e0e0e0",
@@ -131,10 +133,8 @@ class FamiLinkGUI(tk.Tk):
             relief="flat"
         )
         self.help_button.pack(side=tk.LEFT)
-        
-        # --- Initial Welcome Message ---
-        self.add_message("Welcome to FamiLink! Type 'help' or use the button for instructions.", "system")
 
+        self.add_message("Welcome to FamiLink! Type 'help' or use the button for instructions.", "system")
 
     def send_message(self, event=None):
         """Handles sending a message from the user to the chatbot."""
@@ -145,43 +145,35 @@ class FamiLinkGUI(tk.Tk):
         self.add_message(user_text, "user")
         self.user_input_entry.delete(0, tk.END)
 
-        # Process the input and get a response from the chatbot
         try:
             response = self.chatbot.execute_user_input(user_text)
             if response == "exit_command":
                 self.add_message("Goodbye! Closing the application.", "system")
-                self.after(2000, self.destroy) # Close after 2 seconds
+                self.after(2000, self.destroy)
             elif response == "clear_screen":
                 self.conversation_display.config(state='normal')
                 self.conversation_display.delete(1.0, tk.END)
                 self.add_message("Screen cleared.", "system")
             else:
                 tag = "bot"
-                if "impossible" in response or "Invalid" in response:
+                if "impossible" in response or "Invalid" in response or "don't understand" in response:
                     tag = "error"
                 self.add_message(response, tag)
         except Exception as e:
             self.add_message(f"An unexpected error occurred: {e}", "error")
 
     def add_message(self, message: str, tag: str):
-        """
-        Adds a message to the conversation display with appropriate formatting.
-        
-        Args:
-            message: The text of the message to add.
-            tag: The tag for formatting ('user', 'bot', 'error', 'system').
-        """
+        """Adds a message to the conversation display with appropriate formatting."""
         self.conversation_display.config(state='normal')
         
         prefix = ""
         if tag == 'user':
             prefix = "You: "
-        elif tag == 'bot' or tag == 'error':
+        elif tag in ['bot', 'error', 'system']:
             prefix = "FamiLink: "
         
         self.conversation_display.insert(tk.END, f"{prefix}{message}\n\n", (tag,))
         self.conversation_display.config(state='disabled')
-        # Autoscroll to the bottom
         self.conversation_display.see(tk.END)
 
     def reset_knowledge(self):
@@ -196,19 +188,21 @@ class FamiLinkGUI(tk.Tk):
                 self.add_message(f"Error during reset: {e}", "error")
 
     def show_help(self):
-        """Displays the help information in a new window."""
-        help_text = self.chatbot.display_help_information()
-        # Create a new Toplevel window for help
-        help_window = tk.Toplevel(self)
-        help_window.title("FamiLink Help")
-        help_window.geometry("550x600")
-        help_window.configure(bg="#f0f0f0")
-        
-        help_text_widget = scrolledtext.ScrolledText(help_window, wrap=tk.WORD, font=("Helvetica", 10), padx=10, pady=10, bg="#ffffff")
-        help_text_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        help_text_widget.insert(tk.END, help_text)
-        help_text_widget.config(state='disabled')
+        """Displays the help information in a new, non-modal window."""
+        try:
+            help_window = tk.Toplevel(self)
+            help_window.title("FamiLink Help")
+            help_window.geometry("550x650")
+            help_window.configure(bg="#f0f0f0")
 
+            help_text_widget = scrolledtext.ScrolledText(help_window, wrap=tk.WORD, font=("Helvetica", 10), padx=10, pady=10, bg="#ffffff")
+            help_text_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            
+            help_text = self.chatbot.display_help_information()
+            help_text_widget.insert(tk.END, help_text)
+            help_text_widget.config(state='disabled')
+        except Exception as e:
+            messagebox.showerror("Help Error", f"Could not display help information: {e}")
 
 if __name__ == "__main__":
     app = FamiLinkGUI()

@@ -1,0 +1,44 @@
+Arthur is the father of William.
+Molly is the mother of William.
+Charles and Diana are the parents of Harry.
+George is a child of William.
+Charlotte is a daughter of William.
+Louis is a son of William.
+James and Albus are children of Harry.
+William and Harry are siblings.
+Ginny is a sister of Ron.
+Fred is a brother of George.
+Kate is the spouse of William.
+Meghan is the spouse of Harry.
+Elizabeth is a grandmother of William.
+Philip is a grandfather of Harry.
+Andrew is an uncle of William.
+Anne is an aunt of Harry.
+Is Arthur the father of William?
+Is Molly the mother of William?
+Are Charles and Diana the parents of Harry?
+Is George a child of William?
+Is Charlotte a daughter of William?
+Is Louis a son of William?
+Are James and Albus children of Harry?
+Are William and Harry siblings?
+Is Ginny a sister of Ron?
+Is Fred a brother of George?
+Is Kate the spouse of William?
+Is Philip a grandfather of Harry?
+Is Elizabeth a grandmother of William?
+Is Andrew an uncle of William?
+Is Anne an aunt of Harry?
+Are George and Charlotte siblings?
+Are James and Harry relatives?
+Are George and James relatives?
+Who is the father of William?
+Who is the mother of William?
+Who are the parents of Harry?
+Who are the children of William?
+Who are the siblings of Harry?
+Who are the brothers of George?
+Who are the sisters of Ron?
+Who are the sons of William?
+Who are the daughters of William?
+Who is the spouse of Harry?

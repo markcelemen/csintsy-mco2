@@ -59,5 +59,3 @@ python family_chatbot.py
 * `README.md` — This file.
 
 ---
-
-```

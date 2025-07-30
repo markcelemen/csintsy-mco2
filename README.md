@@ -1,4 +1,3 @@
-````markdown
 # FamiLink: The Family Relationship Chatbot
 
 **Authors:**  
@@ -74,8 +73,6 @@ The project uses a powerful combination of **Python** for the user interface and
    ```bash
    pip install pyswip
 ````
-
----
 
 ## 5. How to Use
 

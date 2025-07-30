@@ -35,9 +35,6 @@ The project uses a powerful combination of **Python** for the user interface and
 - **Persistent Knowledge**  
   Maintains state, allowing for an ongoing conversation.
 
-- **Robust Testing**  
-  Includes a comprehensive, automated test suite to ensure logical integrity.
-
 ---
 
 ## 3. Technologies Used

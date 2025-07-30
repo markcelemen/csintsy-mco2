@@ -71,6 +71,8 @@ The project uses a powerful combination of **Python** for the user interface and
    pip install pyswip
 ````
 
+---
+
 ## 5. How to Use
 
 You can interact with FamiLink through the **GUI** or the **command-line interface**.
